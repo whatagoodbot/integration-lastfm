@@ -57,4 +57,5 @@ export default async payload => {
     })
     scrobbleTrack(roomLastfmInstance, payload.nowPlaying.artist, payload.nowPlaying.title)
   }
+  return {}
 }
