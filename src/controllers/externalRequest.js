@@ -31,11 +31,17 @@ export default async payload => {
     })
   })
   const details = await artistDetails
+  let message = details.artistInfo.bio.summary.replace(/<[^>]*>?/gm, '')
+  if (payload.arguments) {
+    if (payload.arguments.toLowerCase().indexOf('full') > -1) {
+      message = details.artistInfo.bio.content.replace(/<[^>]*>?/gm, '')
+    }
+  }
   return {
     topic: 'broadcast',
     payload: {
-      image: details.artistInfo.image[details.artistInfo.image.length - 1]['#'],
-      message: details.artistInfo.bio.summary
+      message
+
     }
   }
 }

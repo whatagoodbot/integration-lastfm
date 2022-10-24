@@ -48,6 +48,7 @@ broker.client.on('message', async (topic, data) => {
         ...processedResponse.payload
       })
       if (validatedResponse.errors) throw { message: validatedResponse.errors } // eslint-disable-line
+      console.log(validatedResponse)
       broker.client.publish(`${topicPrefix}${replyTopic}`, JSON.stringify(validatedResponse))
     }
     metrics.timer('responseTime', performance.now() - startTime, { topic })
