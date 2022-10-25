@@ -50,9 +50,9 @@ export default async payload => {
     })
     const track = await trackDetails
     const albumDetails = new Promise(resolve => {
-      defaultLastfmInstance.getAlbumInfoByMbid({
-        artist: payload.nowPlaying.artist,
-        mbid: track.trackInfo.album.mbid,
+      defaultLastfmInstance.getAlbumInfo({
+        artist: track.trackInfo.album.artist,
+        album: track.trackInfo.album.title,
         callback: results => {
           resolve(results)
         }
