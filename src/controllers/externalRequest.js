@@ -21,20 +21,52 @@ const defaultLastfmInstance = await createLastfmInstance({
 
 export default async payload => {
   if (payload.service !== process.env.npm_package_name) return
-  if (payload.name !== 'artist') return
-  const artistDetails = new Promise(resolve => {
-    defaultLastfmInstance.getArtistInfo({
-      artist: payload.nowPlaying.artist,
-      callback: results => {
-        resolve(results)
-      }
+  let message = 'Couldn\'t find anything. Sorry.'
+  if (payload.name === 'artist') {
+    const artistDetails = new Promise(resolve => {
+      defaultLastfmInstance.getArtistInfo({
+        artist: payload.nowPlaying.artist,
+        callback: results => {
+          resolve(results)
+        }
+      })
     })
-  })
-  const details = await artistDetails
-  let message = details.artistInfo.bio.summary.replace(/<[^>]*>?/gm, '')
-  if (payload.arguments) {
-    if (payload.arguments.toLowerCase().indexOf('full') > -1) {
-      message = details.artistInfo.bio.content.replace(/<[^>]*>?/gm, '')
+    const details = await artistDetails
+    message = details.artistInfo.bio.summary.replace(/<[^>]*>?/gm, '')
+    if (payload.arguments) {
+      if (payload.arguments.toLowerCase().indexOf('full') > -1) {
+        message = details.artistInfo.bio.content.replace(/<[^>]*>?/gm, '')
+      }
+    }
+  } else if (payload.name === 'album') {
+    const trackDetails = new Promise(resolve => {
+      defaultLastfmInstance.getTrackInfo({
+        artist: payload.nowPlaying.artist,
+        track: payload.nowPlaying.title,
+        callback: results => {
+          resolve(results)
+        }
+      })
+    })
+    const track = await trackDetails
+    const albumDetails = new Promise(resolve => {
+      defaultLastfmInstance.getAlbumInfoByMbid({
+        artist: payload.nowPlaying.artist,
+        mbid: track.trackInfo.album.mbid,
+        callback: results => {
+          resolve(results)
+        }
+      })
+    })
+    const details = await albumDetails
+    if (details?.albumInfo?.wiki) {
+      const released = details.albumInfo.wiki.published.split(',')[0]
+      message = `Released ${released}, ${details.albumInfo.wiki.summary.replace(/<[^>]*>?/gm, '')}`
+      if (payload.arguments) {
+        if (payload.arguments.toLowerCase().indexOf('full') > -1) {
+          message = `Released ${released}, ${details.albumInfo.wiki.content.replace(/<[^>]*>?/gm, '')}`
+        }
+      }
     }
   }
   return {
