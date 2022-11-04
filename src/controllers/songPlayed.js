@@ -20,7 +20,7 @@ const defaultLastfmInstance = await createLastfmInstance({
   password: process.env.LASTFM_PASSWORD
 })
 
-const scrobbleTrack = async (lastfmInstance, artist, track) => {
+const scrobbleTrack = async (lastfmInstance, artist, track, album) => {
   logger.debug(`Scrobbling ${track} by ${artist}`)
   if (process.env.NODE_ENV === 'development') return
   const promises = [
@@ -28,6 +28,7 @@ const scrobbleTrack = async (lastfmInstance, artist, track) => {
       lastfmInstance.scrobbleTrack({
         artist,
         track,
+        album,
         callback: (result) => {
           resolve(result)
         }
@@ -37,6 +38,7 @@ const scrobbleTrack = async (lastfmInstance, artist, track) => {
       lastfmInstance.scrobbleNowPlayingTrack({
         artist,
         track,
+        album,
         callback: (result) => {
           resolve(result)
         }
@@ -47,7 +49,7 @@ const scrobbleTrack = async (lastfmInstance, artist, track) => {
 }
 
 export default async payload => {
-  scrobbleTrack(defaultLastfmInstance, payload.nowPlaying.artist, payload.nowPlaying.title)
+  scrobbleTrack(defaultLastfmInstance, payload.nowPlaying.artist, payload.nowPlaying.title, payload.nowPlaying.album)
   if (payload.room.lastfm.enabled) {
     const roomLastfmInstance = await createLastfmInstance({
       api_key: payload.room.lastfm.apiKey,
