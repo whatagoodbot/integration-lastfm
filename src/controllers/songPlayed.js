@@ -57,6 +57,7 @@ export default async payload => {
       username: payload.room.lastfm.username,
       password: payload.room.lastfm.password
     })
+    logger.debug(`Sending to ${payload.room.lastfm.username}`)
     scrobbleTrack(roomLastfmInstance, payload.nowPlaying.artist, payload.nowPlaying.title, payload.nowPlaying.album)
   }
   return {}
