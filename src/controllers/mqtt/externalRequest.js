@@ -1,28 +1,17 @@
-import { createRequire } from 'module'
+import { logger, metrics } from '@whatagoodbot/utilities'
 
-const require = createRequire(import.meta.url)
-const Lastfm = require('simple-lastfm')
-
-const createLastfmInstance = async (lastfmOptions) => {
-  const lastfm = new Lastfm(lastfmOptions)
-  return new Promise(resolve => {
-    lastfm.getSessionKey(() => {
-      resolve(lastfm)
-    })
-  })
-}
-
-const defaultLastfmInstance = await createLastfmInstance({
-  api_key: process.env.LASTFM_API_KEY,
-  api_secret: process.env.LASTFM_API_SECRET,
-  username: process.env.LASTFM_USERNAME,
-  password: process.env.LASTFM_PASSWORD
-})
+import { clients } from '@whatagoodbot/rpc'
+import { defaultLastfmInstance } from '../../libs/lastfm.js'
 
 export default async payload => {
   if (payload.service !== process.env.npm_package_name) return
-  let message = 'Couldn\'t find anything. Sorry.'
-  if (payload.name === 'artist') {
+
+  const string = await clients.strings.get('lastFmNothingFound')
+  let message = string.value
+  if (payload.command === 'artist') {
+    const functionName = payload.command
+    logger.debug({ event: functionName })
+    metrics.count(functionName)
     const artistDetails = new Promise(resolve => {
       defaultLastfmInstance.getArtistInfo({
         artist: payload.nowPlaying.artist,
@@ -32,13 +21,18 @@ export default async payload => {
       })
     })
     const details = await artistDetails
-    message = details.artistInfo.bio.summary.replace(/<[^>]*>?/gm, '')
-    if (payload.arguments) {
-      if (payload.arguments.toLowerCase().indexOf('full') > -1) {
-        message = details.artistInfo.bio.content.replace(/<[^>]*>?/gm, '')
+    if (details.artistInfo) {
+      message = details.artistInfo.bio.summary.replace(/<[^>]*>?/gm, '')
+      if (payload.arguments) {
+        if (payload.arguments.toLowerCase().indexOf('full') > -1) {
+          message = details.artistInfo.bio.content.replace(/<[^>]*>?/gm, '')
+        }
       }
     }
-  } else if (payload.name === 'album') {
+  } else if (payload.command === 'album') {
+    const functionName = payload.command
+    logger.debug({ event: functionName })
+    metrics.count(functionName)
     const trackDetails = new Promise(resolve => {
       defaultLastfmInstance.getTrackInfo({
         artist: payload.nowPlaying.artist,
@@ -50,9 +44,9 @@ export default async payload => {
     })
     const track = await trackDetails
     const albumDetails = new Promise(resolve => {
-      defaultLastfmInstance.getAlbumInfoByMbid({
-        artist: payload.nowPlaying.artist,
-        mbid: track.trackInfo.album.mbid,
+      defaultLastfmInstance.getAlbumInfo({
+        artist: track.trackInfo.album.artist,
+        album: track.trackInfo.album.title,
         callback: results => {
           resolve(results)
         }
@@ -69,11 +63,10 @@ export default async payload => {
       }
     }
   }
-  return {
+  return [{
     topic: 'broadcast',
     payload: {
       message
-
     }
-  }
+  }]
 }
